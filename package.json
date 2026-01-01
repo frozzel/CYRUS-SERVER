@@ -1,0 +1,29 @@
+{
+  "name": "cyrus-server",
+  "version": "1.0.0",
+  "description": "server for cyrus group avatar ai",
+  "main": "server.js",
+  "scripts": {
+    "test": "test",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "ai",
+    "chatgpt",
+    "server",
+    "api",
+    "avatar"
+  ],
+  "author": "Dennis Hickox",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "lodash": "^4.17.21",
+    "microsoft-cognitiveservices-speech-sdk": "^1.47.0",
+    "nodemon": "^3.1.11"
+  }
+}

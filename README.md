@@ -32,6 +32,7 @@ Provide endpoints for logs, metrics, and configuration.
 High‑Level Modules
 
 /server
+
  ├── /src
  │    ├── app.js                # Express app setup
  │    ├── /routes               # REST endpoints

@@ -31,6 +31,7 @@ Provide endpoints for logs, metrics, and configuration.
 ## 🏗️ Step 2: Proposed Server Architecture
 High‑Level Modules
 
+```bash
 /server
 ├── src
 │   ├── app.js
@@ -50,7 +51,7 @@ High‑Level Modules
 │   └── config
 ├── package.json
 └── Dockerfile
-
+```
  
 ## ⚙️ Step 3: Service Responsibilities & Data Flow
 1. Chat + RAG Service

@@ -30,32 +30,27 @@ Provide endpoints for logs, metrics, and configuration.
 
 ## 🏗️ Step 2: Proposed Server Architecture
 High‑Level Modules
-/server
- ├── /src
- │    ├── app.js 
- │    ├── /routes
- │    ├── /controllers
- │    ├── /services 
 
 /server
- ├── /src
- │    ├── app.js                # Express app setup
- │    ├── /routes               # REST endpoints
- │    ├── /controllers          # Request handling logic
- │    ├── /services             # Core business logic
- │    │     ├── chatService.js
- │    │     ├── ragService.js
- │    │     ├── speechService.js
- │    │     ├── scraperService.js
- │    │     ├── leadService.js
- │    │     ├── hubspotService.js
- │    │     └── contentService.js
- │    ├── /models               # Mongoose schemas
- │    ├── /db                   # Mongo + Vector DB setup
- │    ├── /utils                # Logging, error handling, etc.
- │    └── /config               # Env vars, API keys
- ├── package.json
- └── Dockerfile
+├── src
+│   ├── app.js
+│   ├── routes
+│   ├── controllers
+│   ├── services
+│   │   ├── chatService.js
+│   │   ├── ragService.js
+│   │   ├── speechService.js
+│   │   ├── scraperService.js
+│   │   ├── leadService.js
+│   │   ├── hubspotService.js
+│   │   └── contentService.js
+│   ├── models
+│   ├── db
+│   ├── utils
+│   └── config
+├── package.json
+└── Dockerfile
+
  
 ## ⚙️ Step 3: Service Responsibilities & Data Flow
 1. Chat + RAG Service

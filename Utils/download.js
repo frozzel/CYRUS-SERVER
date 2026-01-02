@@ -52,5 +52,16 @@ const downloadFile = (url) => {
   });
 };
 
-module.exports = { downloadFile };
+
+const fetchImage = async (req, res) => {
+  try {
+    const { url } = req.body;
+    const result = await downloadFile(url);
+    res.json(result);        // result = { fileType, filePath }
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+};
+
+module.exports = { downloadFile, fetchImage };
 

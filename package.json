@@ -22,8 +22,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "fluent-ffmpeg": "^2.1.3",
     "lodash": "^4.17.21",
     "microsoft-cognitiveservices-speech-sdk": "^1.47.0",
-    "nodemon": "^3.1.11"
+    "multer": "^2.0.2",
+    "nodemon": "^3.1.11",
+    "openai": "^4.104.0"
   }
 }

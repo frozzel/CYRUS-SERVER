@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 
 // import controller
-const {chatGpt} = require('../controllers/avatar');
-const { introTTS } = require('../controllers/avatar');
+const {chatGpt, introTTS, speechToText} = require('../controllers/avatar');
 
 ////////// routes    //////////
 
 router.post('/talk', chatGpt)
 router.post('/talk2', introTTS)
+router.post('/speech-to-text', speechToText);
 
 
 

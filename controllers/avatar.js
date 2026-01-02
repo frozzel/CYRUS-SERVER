@@ -1,5 +1,11 @@
 const axios = require('axios');
 var textToSpeech = require('../Utils/tts');
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
+const OpenAI = require("openai");
+const ffmpeg = require("fluent-ffmpeg");
+
 
 ////////// Intro Text to Speech //////////
 
@@ -59,3 +65,48 @@ exports.chatGpt = async (req, res) => {
         })
 
 };
+
+
+// store uploads temporarily
+const upload = multer({ dest: "uploads/" });
+
+// Whisper route handler
+exports.speechToText = [
+  upload.single("audio"),
+  async (req, res) => {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file uploaded" });
+    }
+
+    const inputPath = req.file.path;
+    const wavPath = `${inputPath}.wav`;
+
+    try {
+      // 💿 Convert webm → wav
+      await new Promise((resolve, reject) => {
+        ffmpeg(inputPath)
+          .toFormat("wav")
+          .on("error", reject)
+          .on("end", resolve)
+          .save(wavPath);
+      });
+
+      // Send the converted file to Whisper
+      const response = await openai.audio.transcriptions.create({
+        file: fs.createReadStream(wavPath),
+        model: "gpt-4o-mini-transcribe", // or "whisper-1"
+      });
+
+      // Cleanup temp files
+      fs.unlinkSync(inputPath);
+      fs.unlinkSync(wavPath);
+
+      res.json({ text: response.text });
+    } catch (err) {
+      console.error("Speech to text error:", err);
+      res.status(500).json({ error: "Speech recognition failed", details: err.message });
+    }
+  },
+];

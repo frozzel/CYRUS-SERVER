@@ -5,12 +5,14 @@ const path = require("path");
 const multer = require("multer");
 const OpenAI = require("openai");
 const ffmpeg = require("fluent-ffmpeg");
+const { ConsoleLoggingListener } = require('microsoft-cognitiveservices-speech-sdk/distrib/lib/src/common.browser/ConsoleLoggingListener');
 
 
 ////////// Intro Text to Speech //////////
 
 exports.introTTS = async (req, res, next) => {
     textToSpeech(req.body.text, req.body.voice)
+    console.log('TTS Request:', req.body.text);
     .then(result => {
       // console.log('TTS Result:', result.filename);  
       res.json(result);    
@@ -27,7 +29,7 @@ const chatGPTApiUrl = 'https://api.openai.com/v1/chat/completions';
 
 
 exports.chatGpt = async (req, res) => {
-    
+    console.log('ChatGPT Request:', req.body.text);
     // try {
         const userMessage  = req.body.text;
         // console.log(userMessage)

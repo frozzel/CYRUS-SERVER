@@ -5,14 +5,14 @@ const path = require("path");
 const multer = require("multer");
 const OpenAI = require("openai");
 const ffmpeg = require("fluent-ffmpeg");
-const { ConsoleLoggingListener } = require('microsoft-cognitiveservices-speech-sdk/distrib/lib/src/common.browser/ConsoleLoggingListener');
 
 
 ////////// Intro Text to Speech //////////
 
 exports.introTTS = async (req, res, next) => {
-    textToSpeech(req.body.text, req.body.voice)
     console.log('TTS Request:', req.body.text);
+    textToSpeech(req.body.text, req.body.voice)
+    
     .then(result => {
       // console.log('TTS Result:', result.filename);  
       res.json(result);    

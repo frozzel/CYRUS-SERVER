@@ -56,10 +56,10 @@ exports.chatGpt = async (req, res) => {
         );
           
         const reply = response.data.choices[0].message.content;
-        // console.log('ChatGPT Reply:', reply);
+        console.log('ChatGPT Reply:', reply);
         textToSpeech(reply, req.body.voice)
         .then(result => {
-          // console.log('TTS Result:', result.filename);
+          console.log('TTS Result:', result);
             res.json(result)
 
         })
@@ -105,7 +105,7 @@ exports.speechToText = [
       // Cleanup temp files
       fs.unlinkSync(inputPath);
       fs.unlinkSync(wavPath);
-
+      console.log("Transcription Result:", response.text);
       res.json({ text: response.text });
     } catch (err) {
       console.error("Speech to text error:", err);

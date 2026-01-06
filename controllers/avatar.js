@@ -5,7 +5,8 @@ const path = require("path");
 const multer = require("multer");
 const OpenAI = require("openai");
 const ffmpeg = require("fluent-ffmpeg");
-
+const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 ////////// Intro Text to Speech //////////
 

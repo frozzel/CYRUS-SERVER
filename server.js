@@ -3,15 +3,6 @@ const express = require('express');
 require('dotenv').config()// import dotenv
 // require('./config/connections')//   import database connection
 const cors = require("cors");
-app.use(
-  cors({
-    origin: [
-      "https://meta-vr-demo-kn8pf.ondigitalocean.app/",  // your front‑end host
-    //   "https://meta-vr-demo-kn8pf.vercel.app",   // any alternates
-    ],
-    methods: ["GET", "POST", "OPTIONS"],
-  })
-);
 const path = require("path");
 
 
@@ -19,6 +10,15 @@ const path = require("path");
 const app = express();
 // app.use(express.static('public'));
 app.use(express.static(path.join(__dirname, "public"))); // <-- must exist
+app.use(
+  cors({
+    origin: [
+      process.env.CORS_ALLOWED_ORIGINS,  // your front‑end host
+    //   "https://meta-vr-demo-kn8pf.vercel.app",   // any alternates
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+  })
+);
 app.use(express.json())// parse json request body
 app.use(cors())// enable cors
 

@@ -3,11 +3,13 @@ const express = require('express');
 require('dotenv').config()// import dotenv
 // require('./config/connections')//   import database connection
 var cors = require('cors')// import cors
+const path = require("path");
 
 
 /////////////////////////// use middleware ///////////////////////////
 const app = express();
-app.use(express.static('public'));
+// app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, "public"))); // <-- must exist
 app.use(express.json())// parse json request body
 app.use(cors())// enable cors
 

@@ -9,7 +9,6 @@ const path = require("path");
 /////////////////////////// use middleware ///////////////////////////
 const app = express();
 // app.use(express.static('public'));
-app.use(express.static(path.join(__dirname, "public"))); // <-- must exist
 app.use(express.json())// parse json request body
 // app.use(cors())// enable cors
 app.use(
@@ -17,10 +16,12 @@ app.use(
     origin: [
       process.env.CORS_ALLOWED_ORIGINS,  // your front‑end host
       "http://localhost:3000",   // any alternates
+        "http://localhost:3000/",
     ],
     methods: ["GET", "POST", "OPTIONS"],
   })
 );
+app.use(express.static(path.join(__dirname, "public"))); // <-- must exist
 
 /////////////////////////// import routes ///////////////////////////
 const avatarRouter = require('./routes/avatar.js');

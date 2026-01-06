@@ -2,7 +2,16 @@
 const express = require('express');
 require('dotenv').config()// import dotenv
 // require('./config/connections')//   import database connection
-var cors = require('cors')// import cors
+const cors = require("cors");
+app.use(
+  cors({
+    origin: [
+      "https://meta-vr-demo-kn8pf.ondigitalocean.app/",  // your front‑end host
+    //   "https://meta-vr-demo-kn8pf.vercel.app",   // any alternates
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+  })
+);
 const path = require("path");
 
 

@@ -15,7 +15,7 @@ exports.introTTS = async (req, res, next) => {
     textToSpeech(req.body.text, req.body.voice)
     
     .then(result => {
-      // console.log('TTS Result:', result.filename);  
+    //   console.log('TTS Result:', result);  
       res.json(result);    
     })
     .catch(err => {

@@ -141,3 +141,6 @@ HubSpot API limits	Queue requests + retry logic
 Vector DB scaling	Use managed service (Pinecone / Atlas Vector)
 Audio latency	Pre‑generate TTS or stream chunks
 Data privacy	Encrypt PII in MongoDB
+
+
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️

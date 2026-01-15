@@ -10,12 +10,16 @@ const messageSchema = new Schema({
 }, { _id: false });
 
 const ConversationSchema = new Schema({
-	conversationId: { type: String, required: true, unique: true, index: true },
+	conversationsId: { type: String, required: true, unique: true, index: true },
 	messages: { type: [messageSchema], default: [] },
 	contact: {
 		name: { type: String },
 		email: { type: String },
-		phone: { type: String }
+		phone: { type: String }, 
+        company: { type: String },
+        projectGoals: { type: String },
+        budget: { type: String },
+        timeLine: { type: String }
 	},
 	hubspotLeadId: { type: String, default: null },
 	converted: { type: Boolean, default: false },

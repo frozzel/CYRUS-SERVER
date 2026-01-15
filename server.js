@@ -1,7 +1,7 @@
 /////////////////////////// import modules ///////////////////////////
 const express = require('express');
 require('dotenv').config()// import dotenv
-// require('./config/connections')//   import database connection
+require('./config/connections')//   import database connection
 const cors = require("cors");
 const path = require("path");
 

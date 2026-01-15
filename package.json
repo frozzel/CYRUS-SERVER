@@ -26,6 +26,7 @@
     "fluent-ffmpeg": "^2.1.3",
     "lodash": "^4.17.21",
     "microsoft-cognitiveservices-speech-sdk": "^1.47.0",
+    "mongoose": "^9.1.3",
     "multer": "^2.0.2",
     "nodemon": "^3.1.11",
     "openai": "^4.104.0"

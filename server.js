@@ -4,6 +4,8 @@ require('dotenv').config()// import dotenv
 require('./config/connections')//   import database connection
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
+const cron = require("node-cron");
 
 
 /////////////////////////// use middleware ///////////////////////////
@@ -54,6 +56,44 @@ server.listen(PORT,  () => {// start express server on port 8080
     console.log(`🚀  Server running on http://localhost:${PORT}, 🚀`)
     console.log(`...............................................`)
     console.log(`...............Starting Database...............`)
-   
-    
+
+    // Schedule nightly cleanup of generated speech audio files at 2am Eastern
+    cron.schedule(
+      '0 2 * * *',
+      async () => {
+        try {
+          const publicDir = path.join(__dirname, 'public');
+          const files = await fs.promises.readdir(publicDir);
+
+          // Filter to speech-*.mp3 files
+          const speechFiles = files.filter(f => /^speech-.*\.mp3$/i.test(f));
+          if (speechFiles.length <= 1) return; // nothing to clean up
+
+          // Sort by creation time (oldest first)
+          const withStats = await Promise.all(
+            speechFiles.map(async name => {
+              const fullPath = path.join(publicDir, name);
+              const stat = await fs.promises.stat(fullPath);
+              return { name, fullPath, birthtimeMs: stat.birthtimeMs };
+            })
+          );
+
+          withStats.sort((a, b) => a.birthtimeMs - b.birthtimeMs);
+
+          // Keep the first (oldest) file, delete the rest
+          const toDelete = withStats.slice(1);
+          for (const f of toDelete) {
+            try {
+              await fs.promises.unlink(f.fullPath);
+              console.log('Nightly cleanup: deleted', f.name);
+            } catch (err) {
+              console.error('Nightly cleanup: failed to delete', f.name, err.message);
+            }
+          }
+        } catch (err) {
+          console.error('Nightly cleanup job failed:', err.message);
+        }
+      },
+      { timezone: 'America/New_York' }
+    );
 })

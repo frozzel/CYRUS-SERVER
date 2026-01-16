@@ -8,13 +8,25 @@ const OpenAI = require("openai");
 const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
 ffmpeg.setFfmpegPath(ffmpegPath);
+const nodemailer = require("nodemailer");
 
-// Simple contact & lead extractor: name, email, phone, company, projectGoals, budget, timeline
+// Simple contact & lead extractor: name, email, phone, projectGoals, budget, timeline
 const extractContactFromText = (text) => {
   if (!text || typeof text !== 'string') return {};
   const out = {};
-  // email (more robust, word boundaries)
+  // email (robust, supports normal and "name at domain dot com" patterns)
   let emailMatch = text.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/);
+
+  // handle common spoken formats like "name at domain dot com"
+  if (!emailMatch) {
+    const spokenEmail = text.match(/([A-Za-z0-9._%+-]+)\s+(?:at|@)\s+([A-Za-z0-9.-]+)\s+(?:dot|\.)\s+([A-Za-z]{2,})/i);
+    if (spokenEmail) {
+      const local = spokenEmail[1];
+      const domain = `${spokenEmail[2]}.${spokenEmail[3]}`;
+      emailMatch = [`${local}@${domain}`];
+    }
+  }
+
   if (!emailMatch) {
     // fallback: look for any token containing @
     const token = text.split(/\s|,|;|\(|\)/).find(t => t && t.includes('@'));
@@ -25,7 +37,10 @@ const extractContactFromText = (text) => {
       if (m) emailMatch = m;
     }
   }
-  if (emailMatch) out.email = emailMatch[0].toLowerCase();
+
+  if (emailMatch) {
+    out.email = (Array.isArray(emailMatch) ? emailMatch[0] : emailMatch[0]).toLowerCase();
+  }
   // phone (captures many common formats)
   const phoneMatch = text.match(/(\+?\d{1,3}[\s-]?)?(?:\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}/);
   if (phoneMatch) out.phone = phoneMatch[0].replace(/[^0-9+]/g, '');
@@ -33,30 +48,8 @@ const extractContactFromText = (text) => {
   const nameMatch = text.match(/(?:my name is|i\'m|i am|this is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})/i);
   if (nameMatch) out.name = nameMatch[1].trim();
 
-  // company heuristics: "company is", "I work at", "from <Company>"
-  const companyMatch = text.match(/(?:company(?: name)? is|i work at|from|at|with)\s+([A-Z0-9][\w &.\-]{1,60})/i);
-  if (companyMatch) out.company = companyMatch[1].trim();
-  // fallback: infer company from email domain if not explicitly provided
-  if (!out.company && out.email) {
-    try {
-      const domain = out.email.split('@')[1];
-      if (domain) {
-        const parts = domain.split('.');
-        const namePart = parts[0];
-        const publicDomains = ['gmail','yahoo','hotmail','outlook','icloud','protonmail','aol','msn','live'];
-        if (namePart && !publicDomains.includes(namePart.toLowerCase())) {
-          out.company = namePart.replace(/[^A-Za-z0-9]/g, '');
-          // Capitalize
-          out.company = out.company.charAt(0).toUpperCase() + out.company.slice(1);
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
   // debug log to help diagnose extraction issues
-  console.log('extractContactFromText:', { emailMatch: emailMatch && emailMatch[0], companyMatch: companyMatch && companyMatch[1], inferredCompany: out.company });
+  console.log('extractContactFromText:', { emailMatch: emailMatch && emailMatch[0] });
 
   // project goals: look for common phrases
   const goalsMatch = text.match(/(?:project goals|project is|we (?:want|need|'re looking to|are looking to)|looking to|we'd like to)\s+([^\.\n\,]{10,200})/i);
@@ -98,7 +91,8 @@ exports.introTTS = async (req, res, next) => {
               contact: {
                 name: req.body.name || undefined,
                 email: req.body.email || undefined,
-                phone: req.body.phone || undefined
+                phone: req.body.phone || undefined,
+                
               }
             });
             await conv.save();
@@ -152,7 +146,6 @@ exports.chatGpt = async (req, res) => {
             if (found.email && !conv.contact.email) { conv.contact.email = found.email; changed = true; }
             if (found.phone && !conv.contact.phone) { conv.contact.phone = found.phone; changed = true; }
             // additional lead fields stored under contact to match schema
-            if (found.company && !conv.contact.company) { conv.contact.company = found.company; changed = true; }
             if (found.projectGoals && !conv.contact.projectGoals) { conv.contact.projectGoals = found.projectGoals; changed = true; }
             if (found.budget && !conv.contact.budget) { conv.contact.budget = found.budget; changed = true; }
             if (found.timeline && !conv.contact.timeLine) { conv.contact.timeLine = found.timeline; changed = true; }
@@ -170,7 +163,7 @@ exports.chatGpt = async (req, res) => {
         let missingFields = [];
         try {
           if (conv) {
-            const need = ['name','email','phone','company','projectGoals','budget','timeline'];
+            const need = ['name','email','phone','projectGoals','budget','timeline'];
             need.forEach(key => {
               if (key === 'name' || key === 'email' || key === 'phone') {
                 if (!conv.contact || !conv.contact[key]) missingFields.push(key);
@@ -187,7 +180,7 @@ exports.chatGpt = async (req, res) => {
 
         // Build messages for the ChatGPT API. Include system prompt first,
         // then include conversation history (if found), otherwise include the current user message.
-        const systemPrompt = { role: 'system', content: 'You are Arwin, the virtual assistant for Cyrus Group, a professional web development agency. Your primary goals are to: Greet visitors warmly and professionally when they arrive. Explain and answer questions about the company’s web development, design, and digital services. Gather relevant information from potential clients — such as their name, company, project goals, timeline, and budget range — in a friendly and conversational way. Maintain a positive, helpful, and knowledgeable tone that reflects a trusted, modern, and innovative brand. When appropriate, encourage visitors to schedule a consultation or provide contact details for follow-up. If the visitor asks for information you don’t have direct access to, politely let them know you’ll pass their request to the human team. Never generate or reproduce copyrighted material. Keep all responses original and professional. Your style: Clear, friendly, and confident — sound like a real team member rather than a robot. Your purpose: Help potential clients understand how Cyrus Group can turn their ideas into powerful web solutions, while collecting lead info for the team.' };
+        const systemPrompt = { role: 'system', content: 'You are Arwin, the virtual assistant for Cyrus Group, a professional web development agency. Your primary goals are to: Greet visitors warmly and professionally when they arrive. Explain and answer questions about the company’s web development, design, and digital services. Gather relevant information from potential clients — such as their name, email, phone number, project goals, timeline, and budget range — in a friendly and conversational way. Maintain a positive, helpful, and knowledgeable tone that reflects a trusted, modern, and innovative brand. When the visitor provides an email address or phone number, always repeat those details back and politely ask them to confirm so you can be sure they are correct. When appropriate, encourage visitors to schedule a consultation or provide contact details for follow-up. If the visitor asks for information you don’t have direct access to, politely let them know you’ll pass their request to the human team. Never generate or reproduce copyrighted material. Keep all responses original and professional. Your style: Clear, friendly, and confident — sound like a real team member rather than a robot. Your purpose: Help potential clients understand how Cyrus Group can turn their ideas into powerful web solutions, while collecting accurate lead info for the team.' };
 
         let messagesForAPI = [systemPrompt];
         if (Array.isArray(missingFields) && missingFields.length) {
@@ -239,6 +232,40 @@ exports.chatGpt = async (req, res) => {
           console.error('Failed to append AI reply to conversation:', e);
         }
 
+        // Also scan the AI reply for any additional contact/lead details
+        try {
+          if (conv) {
+            const foundFromAI = extractContactFromText(reply);
+            let changedFromAI = false;
+            conv.contact = conv.contact || {};
+            if (foundFromAI.name && !conv.contact.name) { conv.contact.name = foundFromAI.name; changedFromAI = true; }
+            if (foundFromAI.email && !conv.contact.email) { conv.contact.email = foundFromAI.email; changedFromAI = true; }
+            if (foundFromAI.phone && !conv.contact.phone) { conv.contact.phone = foundFromAI.phone; changedFromAI = true; }
+            if (foundFromAI.projectGoals && !conv.contact.projectGoals) { conv.contact.projectGoals = foundFromAI.projectGoals; changedFromAI = true; }
+            if (foundFromAI.budget && !conv.contact.budget) { conv.contact.budget = foundFromAI.budget; changedFromAI = true; }
+            if (foundFromAI.timeline && !conv.contact.timeLine) { conv.contact.timeLine = foundFromAI.timeline; changedFromAI = true; }
+            if (changedFromAI) {
+              await conv.save();
+              console.log('Conversation contact/lead updated from AI reply:', { id: conv.conversationsId, contact: conv.contact });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to extract or save contact/lead info from AI reply:', e);
+        }
+
+        // If we have enough lead info, trigger conversion flow (email + mark converted)
+        try {
+          if (conv && conv.contact) {
+            const c = conv.contact;
+            const hasCoreContact = c.name && c.email && c.phone;
+            if (hasCoreContact && !conv.converted) {
+              await handleConversationUpdate(conv);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to handle conversion/update:', e);
+        }
+
         // Convert reply to speech and return
         try {
           const ttsResult = await textToSpeech(reply, req.body.voice);
@@ -247,6 +274,135 @@ exports.chatGpt = async (req, res) => {
           return res.json({ error: 'TTS conversion failed', details: err.message });
         }
 
+};
+
+// Shared email transporter
+const emailTransporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// Function to summarize the conversation and send an email
+async function summarizeAndSendEmail(messages, contact, conversationsId) {
+  const { name, email, phone, projectGoals } = contact || {};
+
+  // Ensure required fields are present: name + email + phone
+  if (!name || !email || !phone) {
+    console.log("Insufficient data to send email.");
+    return;
+  }
+
+  // Build a readable conversation transcript from message objects
+  const rawTranscript = Array.isArray(messages)
+    ? messages
+        .map(m => `${m.role === 'ai' ? 'AI' : 'User'}: ${m.text}`)
+        .join('\n')
+    : String(messages || '');
+
+  // Ask OpenAI to summarize the full conversation for the email body
+  let aiSummary = rawTranscript;
+  try {
+    const summaryMessages = [
+      {
+        role: 'system',
+        content:
+          'You are Arwin, the Cyrus Group assistant. Given a transcript of a conversation with a prospective client, write a concise summary (4-8 sentences) focusing on: who they are, their project goals, key requirements, budget/timeline if mentioned, and suggested next steps for the Cyrus team. Use clear, professional language and do not invent details.',
+      },
+      {
+        role: 'user',
+        content: `Here is the full conversation transcript. Summarize it for the internal team email:\n\n${rawTranscript}`,
+      },
+    ];
+
+    const summaryResponse = await axios.post(
+      chatGPTApiUrl,
+      { model: 'gpt-4o-mini', messages: summaryMessages },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
+
+    aiSummary = summaryResponse.data.choices[0].message.content || aiSummary;
+  } catch (err) {
+    console.error('Failed to summarize conversation for email:', err.response ? err.response.data : err.message);
+  }
+
+  const summary = {
+    name,
+    email,
+    phone,
+    projectGoals,
+    aiSummary,
+    conversationsId: conversationsId || 'N/A',
+  };
+
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.NOTIFICATION_EMAIL, // Ensure NOTIFICATION_EMAIL is set in env
+      subject: "New Conversation Summary",
+      text: `Name: ${summary.name}\nEmail: ${summary.email}\nPhone: ${summary.phone}\nProject Goals: ${summary.projectGoals}\nConversation ID: ${summary.conversationsId}\n\nAI Conversation Summary:\n${summary.aiSummary}`
+    };
+
+    const info = await emailTransporter.sendMail(mailOptions);
+    console.log("Email sent: ", info.response);
+  } catch (error) {
+    console.error("Error sending email:", error);
+  }
+}
+
+// Trigger email notification and update conversation when converted
+async function handleConversationUpdate(conv) {
+  try {
+    if (!conv) return;
+
+    // Avoid double-sending if already converted
+    if (conv.converted) return;
+
+    // Send email notification with full message history, contact, and conversationsId
+    await summarizeAndSendEmail(conv.messages || [], conv.contact || {}, conv.conversationsId);
+
+    // Mark as converted and push expiry out 2 years
+    conv.converted = true;
+    conv.expiresAt = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000);
+    await conv.save();
+  } catch (error) {
+    console.error("Error handling conversation update:", error);
+  }
+}
+
+// Simple endpoint to test email configuration
+exports.testEmail = async (req, res) => {
+  try {
+    const to = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER;
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !to) {
+      return res.status(400).json({
+        error: "Missing email environment variables",
+        details: "EMAIL_USER, EMAIL_PASS, and NOTIFICATION_EMAIL (or EMAIL_USER as fallback) must be set",
+      });
+    }
+
+    const info = await emailTransporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to,
+      subject: "Cyrus Server Test Email",
+      text: "This is a test email from the Cyrus avatar server to verify SMTP configuration.",
+    });
+
+    console.log("Test email sent:", info.response || info.messageId);
+    return res.json({ success: true, messageId: info.messageId, response: info.response });
+  } catch (err) {
+    console.error("Test email failed:", err);
+    return res.status(500).json({ error: "Test email failed", details: err.message });
+  }
 };
 
 

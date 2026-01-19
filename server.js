@@ -18,9 +18,9 @@ app.use(
     origin: [
       process.env.CORS_ALLOWED_ORIGINS,  // your front‑end host
       "http://localhost:3000",   // any alternates
-        "http://localhost:3000/",
         "http://192.168.1.114:3000",
-       "https://loud-news-lead.loca.lt"
+       "https://cyrus-site-app-wsfjs.ondigitalocean.app",
+       "https://cyrusgroupinnovations.com"
     ],
     methods: ["GET", "POST", "OPTIONS"],
   })

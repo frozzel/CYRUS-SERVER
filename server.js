@@ -28,9 +28,11 @@ app.use(express.static(path.join(__dirname, "public"))); // <-- must exist
 
 /////////////////////////// import routes ///////////////////////////
 const avatarRouter = require('./routes/avatar.js');
+const hubspotRouter = require('./routes/hubspot.js');
 
 /////////////////////////// use routes ///////////////////////////
 app.use('/api/avatar', avatarRouter);
+app.use('/api/hubspot', hubspotRouter);
 
 
 /////////////////////////// start server ///////////////////////////

@@ -29,10 +29,13 @@ app.use(express.static(path.join(__dirname, "public"))); // <-- must exist
 /////////////////////////// import routes ///////////////////////////
 const avatarRouter = require('./routes/avatar.js');
 const hubspotRouter = require('./routes/hubspot.js');
+const mcpRouter = require('./routes/mcp.js');
 
 /////////////////////////// use routes ///////////////////////////
 app.use('/api/avatar', avatarRouter);
 app.use('/api/hubspot', hubspotRouter);
+// MCP endpoint — open CORS so any agent builder can connect
+app.use('/mcp', cors({ origin: '*', methods: ['GET', 'POST', 'OPTIONS'] }), mcpRouter);
 
 
 /////////////////////////// start server ///////////////////////////

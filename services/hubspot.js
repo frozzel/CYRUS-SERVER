@@ -43,6 +43,7 @@ const createLead = async ({ email, phone, firstname, lastname, company, service_
         company,
         lifecyclestage: "lead",
         hs_lead_status: "NEW",
+        hubspot_owner_id: OWNER_ID(),
         service_interest,
         budget,
         time_line: timeline

@@ -121,9 +121,16 @@ const createLead = async (req, res) => {
 };
 
 // Create Service Ticket
+const VALID_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+
 const createTicket = async (req, res) => {
-  const { contactId, issue } = req.body;
-  console.log('Creating ticket for contact ID:', contactId, 'with issue:', issue);
+  const { contactId, issue, priority } = req.body;
+
+  const normalizedPriority = priority && VALID_PRIORITIES.includes(priority.toString().toUpperCase())
+    ? priority.toString().toUpperCase()
+    : "HIGH";
+
+  console.log('Creating ticket for contact ID:', contactId, 'with issue:', issue, 'and priority:', normalizedPriority);
 
   try {
     const response = await axios.post(
@@ -134,7 +141,7 @@ const createTicket = async (req, res) => {
           hs_pipeline: "0",
           hs_pipeline_stage: "1", 
           hubspot_owner_id: OWNER_ID, // Optionally assign to an owner
-          hs_ticket_priority: "HIGH",
+          hs_ticket_priority: normalizedPriority,
           source_type: "CHAT"
         },
         associations: [

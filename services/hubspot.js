@@ -13,6 +13,7 @@ const headers = () => ({
 
 // Search Contact by email
 const searchContact = async (email) => {
+    console.log('Searching for contact with email:', email);
   const response = await axios.post(
     `${HUBSPOT_API}/crm/v3/objects/contacts/search`,
     {

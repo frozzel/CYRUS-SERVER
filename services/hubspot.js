@@ -26,7 +26,12 @@ const searchContact = async (email) => {
     },
     { headers: headers() }
   );
-  return response.data;
+
+  if (!response.data.results || response.data.results.length === 0) {
+    return { status: false, message: 'No contact found with that email' };
+  }
+
+  return { status: true, ...response.data };
 };
 
 // Create Lead (contact + lead status + optional note)
